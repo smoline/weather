@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema.define(version: 20171004140156) do
+ActiveRecord::Schema.define(version: 20171004144457) do
 
   # These are extensions that must be enabled in order to support this database
   enable_extension "plpgsql"
@@ -26,6 +26,21 @@ ActiveRecord::Schema.define(version: 20171004140156) do
     t.integer "observation_time"
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
+  end
+
+  create_table "weather_stations", force: :cascade do |t|
+    t.string "station_id"
+    t.float "latitude"
+    t.float "longitude"
+    t.float "elevation"
+    t.string "state"
+    t.string "name"
+    t.string "gsn_flag"
+    t.string "hcn_flag"
+    t.string "wmo_id"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["station_id"], name: "index_weather_stations_on_station_id"
   end
 
 end

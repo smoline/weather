@@ -22,5 +22,32 @@ namespace :db do
         WeatherReading.create(data)
       end
     end
+
+    desc "Import NOAA weather station data"
+    task import_noaa_stations: :environment do
+      def safe_string(str)
+        str.strip!
+        str.empty? ? nil : str
+      end
+
+      filename = File.join(Rails.root, 'db', 'data_files', 'ghcnd-stations.txt')
+      File.open(filename, "r") do |f|
+        f.each_with_index do |line, index|
+          puts index if index > 0 && index % 10000 == 0
+          data = {
+            station_id: line[0..10],
+            latitude:   safe_string(line[11..19]),
+            longitude:  safe_string(line[20..29]),
+            elevation:  safe_string(line[30..36]),
+            state:      safe_string(line[38..39]),
+            name:       safe_string(line[41..70]),
+            gsn_flag:   safe_string(line[72..74]),
+            hcn_flag:   safe_string(line[76..78]),
+            wmo_id:     safe_string(line[80..84])
+          }
+          WeatherStation.create(data)
+        end
+      end
+    end
   end
 end
