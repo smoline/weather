@@ -34,7 +34,7 @@ function makeLineChart() {
       .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
 
   // add focus circles
-  var bisectDate = d3.bisector(function(d) { return d.reading_date; }).left, focusMax = svg.append("g").style("display", "none");
+  var bisectDate = d3.bisector(function(d) { return d.reading_date; }).left, focusMin = svg.append("g").style("display", "none"), focusMax = svg.append("g").style("display", "none");
 
   // fetch and process the data
   $.getJSON('/weather/data', function(data) {
@@ -44,7 +44,7 @@ function makeLineChart() {
     var readingTypes = function(reading) { return reading.reading_type };
     var readings = data.reduce(function(readings, reading) {
       reading.reading_date = parseDate(reading.reading_date);
-      reading.reading_value = reading.reading_value*0.1 * 9/5 + 32;
+      reading.reading_value = reading.reading_value * 0.1 * 9/5 + 32;
       indices = readings.map(readingTypes);
       idx = indices.indexOf(reading.reading_type);
       if (idx > -1) {
@@ -101,11 +101,40 @@ function makeLineChart() {
         .text(function(d) { return d.reading_type; });
 
     // append the circle at the intersection
+    focusMin.append("circle")
+      .attr("class", "y")
+      .style("fill", "none")
+      .style("stroke", "black")
+      .attr("r", 4);
+
     focusMax.append("circle")
       .attr("class", "y")
       .style("fill", "none")
       .style("stroke", "black")
       .attr("r", 4);
+
+    // append a test label to the max temp line for the daily temp change
+    focusMax.append("text")
+      .attr("class", "y1")
+      .style("stroke", "white")
+      .style("stroke-width", "3.5px")
+      .style("opacity", 0.8)
+      .attr("dx", 8)
+      .attr("dy", "-.3em");
+
+    focusMax.append("text")
+      .attr("class", "y2")
+      .attr("dx", 8)
+      .attr("dy", "-.3em");
+
+    // append the line between the max and min temperature circles
+    focusMax.append("line")
+      .attr("class", "x")
+      .style("stroke", "black")
+      .style("stroke-dasharray", "3,3")
+      .style("opacity", 0.5)
+      .attr("y1", 0)
+      .attr("y2", "height");
 
     // append a rectangle to capture mouse
     svg.append("rect")
@@ -115,23 +144,53 @@ function makeLineChart() {
       .style("pointer-events", "all")
       .on("mouseover", function() {
         focusMax.style("display", null);
+        focusMin.style("display", null);
       })
       .on("mouseout", function () {
         focusMax.style("display", "none");
+        focusMin.style("display", "none");
       })
       .on("mousemove", mousemove);
 
     function mousemove() {
       var x0    = x.invert(d3.mouse(this)[0]),
+          iMin  = bisectDate(readings[1].values, x0, 1),
+          d0Min = readings[1].values[iMin - 1],
+          d1Min = readings[1].values[iMin],
+          dMin  = x0 - d0Min.reading_date > d1Min.reading_date - x0 ? d1Min : d0Min;
           iMax  = bisectDate(readings[0].values, x0, 1),
           d0Max = readings[0].values[iMax - 1],
           d1Max = readings[0].values[iMax],
-          dMax  = x0 - d0Max.reading_date > d1Max.reading_date - x0 ? d1Max : d0Max;
+          dMax  = x0 - d0Max.reading_date > d1Max.reading_date - x0 ? d1Max : d0Max,
+          delta = (dMax.reading_value - dMin.reading_value).toFixed(1);
+
+    focusMin.select("circle.y")
+          .attr("transform",
+                "translate(" + x(dMin.reading_date) + "," +
+                               y(dMin.reading_value) + ")");
 
     focusMax.select("circle.y")
           .attr("transform",
                 "translate(" + x(dMax.reading_date) + "," +
                                y(dMax.reading_value) + ")");
+
+    focusMax.select("text.y1")
+          .text(delta + '°')
+          .attr("transform",
+                "translate(" + x(dMax.reading_date) + "," +
+                               y(dMax.reading_value) + ")");
+
+    focusMax.select("text.y2")
+          .text(delta + '°')
+          .attr("transform",
+                "translate(" + x(dMax.reading_date) + "," +
+                               y(dMax.reading_value) + ")");
+
+    focusMax.select(".x")
+          .attr("transform",
+                "translate(" + x(dMax.reading_date) + "," +
+                               y(dMax.reading_value) + ")")
+          .attr("y2", y(dMin.reading_value) - y(dMax.reading_value));
     }
   });
 }
