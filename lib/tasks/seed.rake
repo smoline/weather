@@ -50,6 +50,9 @@ namespace :db do
       end
     end
 
+    # This did not work for me...I had to download the weather_readings.dump file from his github, then ran: rails db:drop db:create db:migrate and then...
+    # pg_restore -v -c -d weather_development -j3 db/data_files/weather_readings.dump
+
     desc "Fetch and load a remote compressed file"
     task import_noaa_weather_via_http: :environment do
       require 'csv'
