@@ -25,12 +25,29 @@ namespace :db do
 
     desc "Import NOAA weather station data"
     task import_noaa_stations: :environment do
-      def safe_string(str)
-        str.strip!
-        str.empty? ? nil : str
-      end
 
-      filename = File.join(Rails.root, 'db', 'data_files', 'ghcnd-stations.txt')
+      # filename = File.join(Rails.root, 'db', 'data_files', 'ghcnd-stations.csv')
+      # CSV.foreach(filename, headers: false) do |row|
+      #   puts $. if $. % 10000 == 0
+      #   data = {
+      #     station_id: row[0],
+      #     latitude:   Float(row[1]),
+      #     longitude:  Float(row[2]),
+      #     elevation:  Float(row[3]),
+      #     state:      row[4],
+      #     name:       row[5],
+      #     gsn_flag:   row[6],
+      #     hcn_flag:   row[7],
+      #     wmo_id:     row[8]
+      #   }
+      #   WeatherStation.create(data)
+
+        def safe_string(str)
+          str.strip!
+          str.empty? ? nil : str
+        end
+
+      filename = File.join(Rails.root, 'db', 'data_files', 'ghcnd-stations.txt')  
       File.open(filename, "r") do |f|
         f.each_with_index do |line, index|
           puts index if index > 0 && index % 10000 == 0
@@ -51,53 +68,54 @@ namespace :db do
     end
 
     # This did not work for me...I had to download the weather_readings.dump file from his github, then ran: rails db:drop db:create db:migrate and then...
+    # rails db:seed:import_noaa_stations
     # pg_restore -v -c -d weather_development -j3 db/data_files/weather_readings.dump
     # Then added the weather_readings.dump to the gitignore file...
 
-    desc "Fetch and load a remote compressed file"
-    task import_noaa_weather_via_http: :environment do
-      require 'csv'
-      require 'net/http'
-
-      CONN = ActiveRecord::Base.connection
-      bulk_insert = lambda { |rows|
-        sql = <<-SQL.strip_heredoc
-        INSERT INTO weather_readings (station, reading_date, reading_type,
-        reading_value, measurement_flag, quality_flag, source_flag,
-        observation_time, created_at, updated_at)
-        VALUES #{rows.join(',')}
-        SQL
-        CONN.execute(sql)
-      }
-      uri  = URI("http://www1.ncdc.noaa.gov/pub/data/ghcn/daily/by_year/1940.csv.gz")
-      gzip = Net::HTTP.get(uri)
-      data = ActiveSupport::Gzip.decompress(gzip)
-      rows = []
-      n    = 0
-      CSV.parse(data) do |row|
-        station          = CONN.quote(row[0])
-        date_parts       = row[1].match(/(\d{4})(\d{2})(\d{2})/)
-        reading_date     = CONN.quote("#{date_parts[1]}-#{date_parts[2]}-#{date_parts[3]}")
-        reading_type     = CONN.quote(row[2])
-        reading_value    = Integer(row[3])
-        measurement_flag = CONN.quote(row[4])
-        quality_flag     = CONN.quote(row[5])
-        source_flag      = CONN.quote(row[6])
-        observation_time = row[7].nil? ? 'NULL' : row[7]
-        fields = "(#{station}, #{reading_date}, #{reading_type}, "
-        fields += "#{reading_value}, #{measurement_flag}, "
-        fields += "#{quality_flag}, #{source_flag}, "
-        fields += "#{observation_time}, NOW(), NOW())"
-        rows << fields
-        n += 1
-        if rows.count % 10000 == 0
-          bulk_insert.call(rows)
-          rows = []
-          puts "...#{n} rows added"
-        end
-      end
-      bulk_insert.call(rows)
-      puts "...#{n} rows added"
-    end
+    # desc "Fetch and load a remote compressed file"
+    # task import_noaa_weather_via_http: :environment do
+    #   require 'csv'
+    #   require 'net/http'
+    #
+    #   CONN = ActiveRecord::Base.connection
+    #   bulk_insert = lambda { |rows|
+    #     sql = <<-SQL.strip_heredoc
+    #     INSERT INTO weather_readings (station, reading_date, reading_type,
+    #     reading_value, measurement_flag, quality_flag, source_flag,
+    #     observation_time, created_at, updated_at)
+    #     VALUES #{rows.join(',')}
+    #     SQL
+    #     CONN.execute(sql)
+    #   }
+    #   uri  = URI("http://www1.ncdc.noaa.gov/pub/data/ghcn/daily/by_year/1940.csv.gz")
+    #   gzip = Net::HTTP.get(uri)
+    #   data = ActiveSupport::Gzip.decompress(gzip)
+    #   rows = []
+    #   n    = 0
+    #   CSV.parse(data) do |row|
+    #     station          = CONN.quote(row[0])
+    #     date_parts       = row[1].match(/(\d{4})(\d{2})(\d{2})/)
+    #     reading_date     = CONN.quote("#{date_parts[1]}-#{date_parts[2]}-#{date_parts[3]}")
+    #     reading_type     = CONN.quote(row[2])
+    #     reading_value    = Integer(row[3])
+    #     measurement_flag = CONN.quote(row[4])
+    #     quality_flag     = CONN.quote(row[5])
+    #     source_flag      = CONN.quote(row[6])
+    #     observation_time = row[7].nil? ? 'NULL' : row[7]
+    #     fields = "(#{station}, #{reading_date}, #{reading_type}, "
+    #     fields += "#{reading_value}, #{measurement_flag}, "
+    #     fields += "#{quality_flag}, #{source_flag}, "
+    #     fields += "#{observation_time}, NOW(), NOW())"
+    #     rows << fields
+    #     n += 1
+    #     if rows.count % 10000 == 0
+    #       bulk_insert.call(rows)
+    #       rows = []
+    #       puts "...#{n} rows added"
+    #     end
+    #   end
+    #   bulk_insert.call(rows)
+    #   puts "...#{n} rows added"
+    # end
   end
 end

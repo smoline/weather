@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema.define(version: 20171004144457) do
+ActiveRecord::Schema.define(version: 20171006164008) do
 
   # These are extensions that must be enabled in order to support this database
   enable_extension "plpgsql"
@@ -26,6 +26,7 @@ ActiveRecord::Schema.define(version: 20171004144457) do
     t.integer "observation_time"
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
+    t.index ["reading_date", "reading_type"], name: "index_weather_readings_on_reading_date_and_reading_type"
   end
 
   create_table "weather_stations", force: :cascade do |t|
