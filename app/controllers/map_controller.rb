@@ -10,7 +10,7 @@ class MapController < ApplicationController
       WHERE station_id IN (
         SELECT DISTINCT station
         FROM weather_readings
-        WHERE reading_date < '1837-01-01'
+        WHERE reading_date = '1940-01-01'
           AND reading_type IN ('TMAX', 'TMIN')
       )
     SQL
