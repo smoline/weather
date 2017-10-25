@@ -10,6 +10,22 @@
   </head>
 
   <body>
-    <%= yield %>
+    <header>
+      <div class="navbar">
+        <div class="nav1">
+          <h1>Weather</h1>
+        </div>
+        <div class="nav2">
+          <ul>
+            <li><a href="#"><%= link_to "Weather Stations", map_index_url %></a></li>
+            <li><a href="#"><%= link_to "Heat Map", weather_heatmap_url %></a></li>
+            <li><a href="#"><%= link_to "Linechart", weather_index_url %></a></li>
+          </ul>
+        </div>
+      </div>
+    </header>
+    <div class="main">
+      <%= yield %>
+    </div>
   </body>
 </html>
